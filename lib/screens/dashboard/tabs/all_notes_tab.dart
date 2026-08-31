@@ -4,9 +4,8 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../../providers/notes_provider.dart';
 import '../../../providers/settings_provider.dart';
-import '../../editor/note_editor_screen.dart';
+import '../widgets/filter_chips_bar.dart';
 import '../widgets/note_card.dart';
-import '../widgets/search_bar_widget.dart';
 
 class AllNotesTab extends StatelessWidget {
   const AllNotesTab({super.key});
@@ -17,6 +16,9 @@ class AllNotesTab extends StatelessWidget {
     final settingsProvider = context.watch<SettingsProvider>();
     final notes = notesProvider.allNotes;
 
+    final hasActiveFilters = notesProvider.selectedColorFilter != null ||
+        notesProvider.selectedFolderFilter != null;
+
     return RefreshIndicator(
       onRefresh: () => notesProvider.loadNotes(),
       child: CustomScrollView(
@@ -24,11 +26,11 @@ class AllNotesTab extends StatelessWidget {
           parent: BouncingScrollPhysics(),
         ),
         slivers: [
-          // Search & Filters Header
+          // Filter Chips Header (if folders or color filters exist)
           const SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(16, 8, 16, 14),
-              child: SearchBarWidget(),
+              padding: EdgeInsets.only(top: 8.0, bottom: 4.0),
+              child: FilterChipsBar(),
             ),
           ),
 
@@ -40,23 +42,17 @@ class AllNotesTab extends StatelessWidget {
                 icon: Icons.note_add_rounded,
                 title: notesProvider.searchQuery.isNotEmpty
                     ? 'No Notes Matching Query'
-                    : AppStrings.emptyNotesTitle,
+                    : (hasActiveFilters ? 'No Filtered Notes' : AppStrings.emptyNotesTitle),
                 subtitle: notesProvider.searchQuery.isNotEmpty
-                    ? 'Try searching for something else or clearing your filters.'
-                    : AppStrings.emptyNotesSubtitle,
-                actionLabel: notesProvider.searchQuery.isEmpty ? 'Create First Note' : null,
-                onAction: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const NoteEditorScreen(),
-                    ),
-                  );
-                },
+                    ? 'Try searching for something else or clearing your search.'
+                    : (hasActiveFilters
+                        ? 'Try clearing your folder or color filters to see all notes.'
+                        : AppStrings.emptyNotesSubtitle),
               ),
             )
           else if (settingsProvider.isGridView)
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
               sliver: SliverGrid(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
@@ -72,7 +68,7 @@ class AllNotesTab extends StatelessWidget {
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) => Padding(

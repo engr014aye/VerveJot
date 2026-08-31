@@ -4,6 +4,8 @@ import 'note_model.dart';
 import 'task_model.dart';
 
 class BackupDataModel {
+  static const int maxPayloadBytes = 20 * 1024 * 1024; // 20 MB safety limit
+
   final int version;
   final String exportedAt;
   final List<FolderModel> folders;
@@ -30,20 +32,47 @@ class BackupDataModel {
   }
 
   factory BackupDataModel.fromJson(Map<String, dynamic> json) {
-    final folderList = (json['folders'] as List<dynamic>? ?? [])
-        .map((e) => FolderModel.fromJson(Map<String, dynamic>.from(e as Map)))
-        .toList();
+    final List<FolderModel> folderList = [];
+    if (json['folders'] is List) {
+      for (final item in (json['folders'] as List)) {
+        if (item is Map) {
+          try {
+            folderList.add(FolderModel.fromJson(Map<String, dynamic>.from(item)));
+          } catch (_) {
+            // Skip malformed folder record defensively
+          }
+        }
+      }
+    }
 
-    final noteList = (json['notes'] as List<dynamic>? ?? [])
-        .map((e) => NoteModel.fromJson(Map<String, dynamic>.from(e as Map)))
-        .toList();
+    final List<NoteModel> noteList = [];
+    if (json['notes'] is List) {
+      for (final item in (json['notes'] as List)) {
+        if (item is Map) {
+          try {
+            noteList.add(NoteModel.fromJson(Map<String, dynamic>.from(item)));
+          } catch (_) {
+            // Skip malformed note record defensively
+          }
+        }
+      }
+    }
 
-    final taskList = (json['tasks'] as List<dynamic>? ?? [])
-        .map((e) => TaskModel.fromJson(Map<String, dynamic>.from(e as Map)))
-        .toList();
+    final List<TaskModel> taskList = [];
+    if (json['tasks'] is List) {
+      for (final item in (json['tasks'] as List)) {
+        if (item is Map) {
+          try {
+            taskList.add(TaskModel.fromJson(Map<String, dynamic>.from(item)));
+          } catch (_) {
+            // Skip malformed task record defensively
+          }
+        }
+      }
+    }
 
     return BackupDataModel(
-      version: json['version'] as int? ?? 1,
+      version: (json['version'] as num?)?.toInt() ?? 1,
       exportedAt: json['exported_at'] as String? ?? DateTime.now().toIso8601String(),
       folders: folderList,
       notes: noteList,
@@ -56,9 +85,12 @@ class BackupDataModel {
   }
 
   factory BackupDataModel.decode(String rawJson) {
+    if (rawJson.length > maxPayloadBytes) {
+      throw const FormatException('Backup payload exceeds the 20MB safety limit.');
+    }
     final dynamic decoded = jsonDecode(rawJson);
     if (decoded is! Map<String, dynamic>) {
-      throw const FormatException('Invalid backup payload format.');
+      throw const FormatException('Invalid backup payload format: root must be a JSON object.');
     }
     return BackupDataModel.fromJson(decoded);
   }

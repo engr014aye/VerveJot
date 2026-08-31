@@ -3,7 +3,11 @@ class AppStrings {
 
   static const String appName = 'VerveJot';
   static const String appTagline = 'Daily Notes & Tasks';
-  static const String version = '1.0.0';
+  static const String versionName = '1.0.0';
+  static const String versionCode = '1';
+  static const String version = '1.0.0 (1)';
+  static const String developerName = 'Zahra ini';
+  static const String privacyPolicyUrl = 'https://doc-hosting.flycricket.io/vervejot-privacy-policy/4c4cb463-fff5-4c6d-bbef-cec84bf1c1b1/privacy';
 
   // Tabs
   static const String tabAllNotes = 'All Notes';
@@ -33,16 +37,21 @@ class AppStrings {
   static const String settingsTitle = 'Settings';
   static const String appearanceSection = 'Appearance';
   static const String audioHapticsSection = 'Audio & Feedback';
-  static const String dataManagementSection = 'Data & Storage';
-  static const String aboutSection = 'About VerveJot';
+  static const String aboutSection = 'About';
 
   static const String oledDarkMode = 'OLED True Black';
   static const String soundEffects = 'Sound Effects';
   static const String soundVolume = 'Sound Volume';
   static const String hapticFeedback = 'Haptic Feedback';
-  static const String exportBackup = 'Export JSON Backup';
-  static const String importBackup = 'Import JSON Backup';
 
-  // Privacy pledge
-  static const String privacyPledge = '100% Offline & Zero-Permission Guarantee: VerveJot runs entirely on your device. We request zero Android permissions, include zero telemetry or trackers, and never transmit your data anywhere.';
+  // Privacy Policy & About
+  static const String privacyPolicyTitle = 'Privacy Policy';
+  static const String privacyPolicyContent = '''
+VerveJot is built with a 100% offline-first architecture. 
+
+• Local Storage: All your notes, folders, and daily tasks are stored locally on your device in an encrypted/private SQLite database.
+• Zero Data Collection: We do not collect, track, store, or transmit any of your personal data, notes, or usage analytics.
+• Zero Internet Permissions: VerveJot operates completely offline and requires no internet access.
+• User Control: You retain full ownership and control over your data.
+''';
 }

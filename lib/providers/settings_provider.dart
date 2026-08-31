@@ -1,18 +1,18 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../core/services/audio_service.dart';
 import '../core/services/preferences_service.dart';
 
 class SettingsProvider with ChangeNotifier {
   final PreferencesService _prefs;
 
-  late bool _isDarkMode;
+  late ThemeMode _themeMode;
   late bool _soundEnabled;
   late double _soundVolume;
   late bool _hapticsEnabled;
   late bool _isGridView;
 
   SettingsProvider(this._prefs) {
-    _isDarkMode = _prefs.isDarkMode;
+    _themeMode = _parseThemeMode(_prefs.themeMode);
     _soundEnabled = _prefs.soundEnabled;
     _soundVolume = _prefs.soundVolume;
     _hapticsEnabled = _prefs.hapticsEnabled;
@@ -25,20 +25,39 @@ class SettingsProvider with ChangeNotifier {
     );
   }
 
-  bool get isDarkMode => _isDarkMode;
+  ThemeMode get themeMode => _themeMode;
   bool get soundEnabled => _soundEnabled;
   double get soundVolume => _soundVolume;
   bool get hapticsEnabled => _hapticsEnabled;
   bool get isGridView => _isGridView;
 
-  Future<void> setDarkMode(bool value) async {
-    _isDarkMode = value;
-    await _prefs.setDarkMode(value);
-    notifyListeners();
+  static ThemeMode _parseThemeMode(String val) {
+    switch (val) {
+      case 'light':
+        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
+      case 'system':
+      default:
+        return ThemeMode.system;
+    }
   }
 
-  Future<void> toggleDarkMode() async {
-    await setDarkMode(!_isDarkMode);
+  static String _themeModeToString(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.light:
+        return 'light';
+      case ThemeMode.dark:
+        return 'dark';
+      case ThemeMode.system:
+        return 'system';
+    }
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    _themeMode = mode;
+    await _prefs.setThemeMode(_themeModeToString(mode));
+    notifyListeners();
   }
 
   Future<void> setSoundEnabled(bool value) async {

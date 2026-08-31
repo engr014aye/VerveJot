@@ -71,8 +71,6 @@ class FoldersTab extends StatelessWidget {
                 icon: Icons.folder_open_rounded,
                 title: AppStrings.emptyFoldersTitle,
                 subtitle: AppStrings.emptyFoldersSubtitle,
-                actionLabel: 'Create First Folder',
-                onAction: () => FolderDialogs.showCreateFolderDialog(context),
               ),
             )
           else

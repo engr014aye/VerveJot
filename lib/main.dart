@@ -55,7 +55,7 @@ class VerveJotApp extends StatelessWidget {
     return MaterialApp(
       title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
-      themeMode: settings.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      themeMode: settings.themeMode,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.oledDarkTheme,
       home: const DashboardScreen(),

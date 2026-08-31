@@ -7,12 +7,11 @@ import '../../core/widgets/bouncing_button.dart';
 import '../../providers/notes_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/tasks_provider.dart';
+import '../editor/note_editor_screen.dart';
 import '../settings/settings_screen.dart';
 import 'tabs/all_notes_tab.dart';
-import 'tabs/daily_tasks_tab.dart';
 import 'tabs/folders_tab.dart';
 import 'tabs/pinned_notes_tab.dart';
-import 'widgets/speed_dial_fab.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -24,12 +23,15 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   int _currentTabIndex = 0;
+  bool _isSearchOpen = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
       if (_tabController.index != _currentTabIndex) {
         setState(() {
@@ -43,66 +45,29 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
-  void _showQuickTaskDialog() {
-    final controller = TextEditingController();
+  void _openSearch() {
+    setState(() {
+      _isSearchOpen = true;
+    });
+    AudioService().playTap();
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) _searchFocusNode.requestFocus();
+    });
+  }
 
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text(
-          'Quick Daily Task',
-          style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: -0.3),
-        ),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(
-            hintText: 'What needs to be done today?',
-          ),
-          onSubmitted: (_) {
-            final title = controller.text.trim();
-            if (title.isNotEmpty) {
-              context.read<TasksProvider>().createTask(title: title);
-              Navigator.pop(ctx);
-            }
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          BouncingButton(
-            onTap: () {
-              final title = controller.text.trim();
-              if (title.isNotEmpty) {
-                context.read<TasksProvider>().createTask(title: title);
-              }
-              Navigator.pop(ctx);
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text(
-                'Add Task',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  void _closeSearch() {
+    setState(() {
+      _isSearchOpen = false;
+      _searchController.clear();
+    });
+    context.read<NotesProvider>().setSearchQuery('');
+    context.read<TasksProvider>().setSearchQuery('');
+    AudioService().playTap();
   }
 
   @override
@@ -110,68 +75,137 @@ class _DashboardScreenState extends State<DashboardScreen>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final settingsProvider = context.watch<SettingsProvider>();
-    final notesProvider = context.watch<NotesProvider>();
-    final tasksProvider = context.watch<TasksProvider>();
+    final notesProvider = context.read<NotesProvider>();
+    final tasksProvider = context.read<TasksProvider>();
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.oledBackground : AppColors.lightBackground,
       appBar: AppBar(
-        titleSpacing: 20,
-        title: Row(
-          children: [
-            Container(
-              width: 10,
-              height: 10,
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
+        titleSpacing: _isSearchOpen ? 0 : 20,
+        leading: _isSearchOpen
+            ? BouncingButton(
+                shrinkScale: 0.85,
+                onTap: _closeSearch,
+                child: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+              )
+            : null,
+        title: _isSearchOpen
+            ? TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isDark ? AppColors.oledTextPrimary : AppColors.lightTextPrimary,
+                ),
+                decoration: InputDecoration(
+                  hintText: AppStrings.searchHint,
+                  hintStyle: TextStyle(
+                    fontSize: 15,
+                    color: isDark ? AppColors.oledTextMuted : AppColors.lightTextMuted,
+                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  filled: false,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                onChanged: (query) {
+                  notesProvider.setSearchQuery(query);
+                  tasksProvider.setSearchQuery(query);
+                },
+              )
+            : Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    AppStrings.appName,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(width: 10),
-            const Text(
-              AppStrings.appName,
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
-              ),
-            ),
-          ],
-        ),
         actions: [
-          // View Mode Switcher
-          if (_currentTabIndex == 0 || _currentTabIndex == 1)
+          // Search Action (or Clear if search is open)
+          if (_isSearchOpen)
+            if (_searchController.text.isNotEmpty)
+              BouncingButton(
+                shrinkScale: 0.85,
+                onTap: () {
+                  _searchController.clear();
+                  notesProvider.setSearchQuery('');
+                  tasksProvider.setSearchQuery('');
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14.0),
+                  child: Icon(
+                    Icons.clear_rounded,
+                    size: 20,
+                    color: isDark ? AppColors.oledTextMuted : AppColors.lightTextMuted,
+                  ),
+                ),
+              )
+            else
+              const SizedBox.shrink()
+          else ...[
+            // Search Icon
             BouncingButton(
               shrinkScale: 0.85,
-              onTap: () => settingsProvider.toggleViewMode(),
+              onTap: _openSearch,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: Icon(
-                  settingsProvider.isGridView
-                      ? Icons.view_list_rounded
-                      : Icons.grid_view_rounded,
+                  Icons.search_rounded,
                   size: 22,
                   color: isDark ? AppColors.oledTextSecondary : AppColors.lightTextSecondary,
                 ),
               ),
             ),
 
-          // Settings Action
-          BouncingButton(
-            shrinkScale: 0.85,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
-            },
-            child: Padding(
-              padding: const EdgeInsets.only(left: 4.0, right: 18.0),
-              child: Icon(
-                Icons.settings_outlined,
-                size: 22,
-                color: isDark ? AppColors.oledTextSecondary : AppColors.lightTextSecondary,
+            // View Mode Switcher (Grid / List for Notes & Pinned)
+            if (_currentTabIndex == 0 || _currentTabIndex == 1)
+              BouncingButton(
+                shrinkScale: 0.85,
+                onTap: () => settingsProvider.toggleViewMode(),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Icon(
+                    settingsProvider.isGridView
+                        ? Icons.view_list_rounded
+                        : Icons.grid_view_rounded,
+                    size: 22,
+                    color: isDark ? AppColors.oledTextSecondary : AppColors.lightTextSecondary,
+                  ),
+                ),
+              ),
+
+            // Settings Action
+            BouncingButton(
+              shrinkScale: 0.85,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.only(left: 4.0, right: 18.0),
+                child: Icon(
+                  Icons.settings_outlined,
+                  size: 22,
+                  color: isDark ? AppColors.oledTextSecondary : AppColors.lightTextSecondary,
+                ),
               ),
             ),
-          ),
+          ],
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
@@ -187,6 +221,9 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
             child: TabBar(
               controller: _tabController,
+              isScrollable: false,
+              tabAlignment: TabAlignment.fill,
+              labelPadding: EdgeInsets.zero,
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: Colors.transparent,
               indicator: BoxDecoration(
@@ -203,60 +240,53 @@ class _DashboardScreenState extends State<DashboardScreen>
               labelColor: Colors.black,
               unselectedLabelColor: isDark ? AppColors.oledTextSecondary : AppColors.lightTextSecondary,
               labelStyle: const TextStyle(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.2,
               ),
               unselectedLabelStyle: const TextStyle(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w500,
                 letterSpacing: -0.2,
               ),
-              tabs: [
-                Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(AppStrings.tabAllNotes),
-                      if (notesProvider.totalNotesCount > 0) ...[
-                        const SizedBox(width: 4),
-                        Text('(${notesProvider.totalNotesCount})', style: const TextStyle(fontSize: 10)),
-                      ],
-                    ],
-                  ),
-                ),
-                Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(AppStrings.tabPinned),
-                      if (notesProvider.pinnedNotes.isNotEmpty) ...[
-                        const SizedBox(width: 4),
-                        Text('(${notesProvider.pinnedNotes.length})', style: const TextStyle(fontSize: 10)),
-                      ],
-                    ],
-                  ),
-                ),
-                Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(AppStrings.tabTasks),
-                      if (tasksProvider.pendingCount > 0) ...[
-                        const SizedBox(width: 4),
-                        Text('(${tasksProvider.pendingCount})', style: const TextStyle(fontSize: 10)),
-                      ],
-                    ],
-                  ),
-                ),
-                const Tab(text: AppStrings.tabFolders),
+              tabs: const [
+                Tab(text: 'All Notes'),
+                Tab(text: 'Pinned'),
+                Tab(text: 'Folders'),
               ],
             ),
           ),
         ),
       ),
-      floatingActionButton: SpeedDialFab(
-        onQuickTask: _showQuickTaskDialog,
+      floatingActionButton: BouncingButton(
+        shrinkScale: 0.88,
+        borderRadius: BorderRadius.circular(18),
+        onTap: () {
+          AudioService().playTap();
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const NoteEditorScreen()),
+          );
+        },
+        child: Container(
+          width: 58,
+          height: 58,
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.4),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.add_rounded,
+            size: 32,
+            color: Colors.black,
+          ),
+        ),
       ),
       body: TabBarView(
         controller: _tabController,
@@ -264,7 +294,6 @@ class _DashboardScreenState extends State<DashboardScreen>
         children: const [
           AllNotesTab(),
           PinnedNotesTab(),
-          DailyTasksTab(),
           FoldersTab(),
         ],
       ),

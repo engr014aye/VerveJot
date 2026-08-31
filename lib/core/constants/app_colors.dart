@@ -50,12 +50,23 @@ class AppColors {
   ];
 
   static Color fromHex(String? hexString, {Color defaultColor = primary}) {
-    if (hexString == null || hexString.isEmpty) return defaultColor;
+    if (hexString == null) return defaultColor;
+    final clean = hexString.replaceAll('#', '').replaceAll(' ', '').trim();
+    if (clean.isEmpty) return defaultColor;
+
     try {
-      final buffer = StringBuffer();
-      if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
-      buffer.write(hexString.replaceFirst('#', ''));
-      return Color(int.parse(buffer.toString(), radix: 16));
+      if (clean.length == 3) {
+        // e.g. "F00" -> "FF0000"
+        final r = clean[0];
+        final g = clean[1];
+        final b = clean[2];
+        return Color(int.parse('FF$r$r$g$g$b$b', radix: 16));
+      } else if (clean.length == 6) {
+        return Color(int.parse('FF$clean', radix: 16));
+      } else if (clean.length == 8) {
+        return Color(int.parse(clean, radix: 16));
+      }
+      return defaultColor;
     } catch (_) {
       return defaultColor;
     }

@@ -153,14 +153,6 @@ class FolderNotesScreen extends StatelessWidget {
                 icon: Icons.note_alt_outlined,
                 title: 'Empty Folder',
                 subtitle: 'No notes in ${currentFolder.name} yet. Tap + to add one.',
-                actionLabel: 'Create Note in Folder',
-                onAction: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => NoteEditorScreen(initialFolderId: currentFolder.id),
-                    ),
-                  );
-                },
               ),
             )
           else if (settingsProvider.isGridView)

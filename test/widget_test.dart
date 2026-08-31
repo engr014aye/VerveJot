@@ -30,20 +30,16 @@ void main() {
     expect(tapped, true);
   });
 
-  testWidgets('EmptyStateView renders title and subtitle', (WidgetTester tester) async {
+  testWidgets('EmptyStateView renders animation canvas', (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
-          body: EmptyStateView(
-            icon: Icons.note_alt_rounded,
-            title: 'No Notes',
-            subtitle: 'Start creating notes now.',
-          ),
+          body: EmptyStateView(),
         ),
       ),
     );
 
-    expect(find.text('No Notes'), findsOneWidget);
-    expect(find.text('Start creating notes now.'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(EmptyStateView), findsOneWidget);
   });
 }

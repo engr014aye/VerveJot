@@ -84,7 +84,13 @@ class DatabaseHelper {
 
   Future<int> deleteFolder(int id) async {
     final db = await database;
-    // Notes assigned to this folder will have folder_id set to NULL due to ON DELETE SET NULL
+    // Explicitly unassign notes in addition to ON DELETE SET NULL
+    await db.update(
+      Tables.notes,
+      {Tables.noteFolderId: null},
+      where: '${Tables.noteFolderId} = ?',
+      whereArgs: [id],
+    );
     return await db.delete(
       Tables.folders,
       where: '${Tables.folderId} = ?',
@@ -326,6 +332,8 @@ class DatabaseHelper {
         await txn.delete(Tables.folders);
       }
 
+      final now = DateTime.now().toIso8601String();
+
       // Map old folder IDs to new folder IDs if merging without replacing
       final Map<int, int> folderIdMapping = {};
 
@@ -333,6 +341,9 @@ class DatabaseHelper {
         final map = folder.toMap();
         if (!replaceExisting) {
           map.remove('id');
+        }
+        if (map['created_at'] == null) {
+          map['created_at'] = now;
         }
         final newId = await txn.insert(
           Tables.folders,
@@ -354,6 +365,9 @@ class DatabaseHelper {
             map['folder_id'] = folderIdMapping[note.folderId];
           }
         }
+        if (map['created_at'] == null) map['created_at'] = now;
+        if (map['updated_at'] == null) map['updated_at'] = now;
+
         final newId = await txn.insert(
           Tables.notes,
           map,
@@ -372,6 +386,9 @@ class DatabaseHelper {
             map['note_id'] = noteIdMapping[task.noteId];
           }
         }
+        if (map['created_at'] == null) map['created_at'] = now;
+        if (map['updated_at'] == null) map['updated_at'] = now;
+
         await txn.insert(
           Tables.tasks,
           map,

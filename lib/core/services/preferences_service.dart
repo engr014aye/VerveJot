@@ -1,7 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PreferencesService {
-  static const String _keyDarkMode = 'vervejot_dark_mode';
+  static const String _keyThemeMode = 'vervejot_theme_mode'; // 'system', 'light', 'dark'
   static const String _keySoundEnabled = 'vervejot_sound_enabled';
   static const String _keySoundVolume = 'vervejot_sound_volume';
   static const String _keyHapticsEnabled = 'vervejot_haptics_enabled';
@@ -20,8 +20,8 @@ class PreferencesService {
     return _instance!;
   }
 
-  bool get isDarkMode => _prefs.getBool(_keyDarkMode) ?? true;
-  Future<bool> setDarkMode(bool value) => _prefs.setBool(_keyDarkMode, value);
+  String get themeMode => _prefs.getString(_keyThemeMode) ?? 'system';
+  Future<bool> setThemeMode(String value) => _prefs.setString(_keyThemeMode, value);
 
   bool get soundEnabled => _prefs.getBool(_keySoundEnabled) ?? true;
   Future<bool> setSoundEnabled(bool value) => _prefs.setBool(_keySoundEnabled, value);

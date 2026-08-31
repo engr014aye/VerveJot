@@ -43,6 +43,9 @@ class FolderDialogs {
           final isDark = Theme.of(dialogCtx).brightness == Brightness.dark;
 
           return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(22),
+            ),
             title: const Text(
               'Create Folder',
               style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: -0.3),
@@ -195,6 +198,9 @@ class FolderDialogs {
           final isDark = Theme.of(dialogCtx).brightness == Brightness.dark;
 
           return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(22),
+            ),
             title: const Text(
               'Edit Folder',
               style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: -0.3),
