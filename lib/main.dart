@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'core/constants/app_strings.dart';
-import 'core/services/in_app_update_service.dart';
 import 'core/services/preferences_service.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/folders_provider.dart';
@@ -24,9 +23,6 @@ void main() async {
   );
 
   final prefsService = await PreferencesService.getInstance();
-
-  // Check for Google Play Immediate In-App Update
-  InAppUpdateService().checkForImmediateUpdate();
 
   runApp(
     MultiProvider(

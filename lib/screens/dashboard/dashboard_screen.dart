@@ -1,8 +1,11 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/services/audio_service.dart';
+import '../../core/services/in_app_update_service.dart';
 import '../../core/widgets/bouncing_button.dart';
 import '../../providers/notes_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -40,6 +43,10 @@ class _DashboardScreenState extends State<DashboardScreen>
         AudioService().playTap();
       }
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkMandatoryAppUpdate();
+    });
   }
 
   @override
@@ -68,6 +75,60 @@ class _DashboardScreenState extends State<DashboardScreen>
     context.read<NotesProvider>().setSearchQuery('');
     context.read<TasksProvider>().setSearchQuery('');
     AudioService().playTap();
+  }
+
+  Future<void> _checkMandatoryAppUpdate() async {
+    final result = await InAppUpdateService().checkForImmediateUpdate();
+    if (result == InAppUpdateResult.updateRequiredDialogNeeded && mounted) {
+      _showMandatoryUpdateDialog();
+    }
+  }
+
+  void _showMandatoryUpdateDialog() {
+    showCupertinoDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: CupertinoAlertDialog(
+          title: const Text(
+            'Update Required',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+          ),
+          content: const Padding(
+            padding: EdgeInsets.only(top: 8.0),
+            child: Text(
+              'A new version of VerveJot is available on Google Play Store with important fixes and improvements. Please update now to continue.',
+            ),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () async {
+                const packageName = 'com.zahraini.vervejot';
+                final marketUri = Uri.parse('market://details?id=$packageName');
+                final webUri = Uri.parse('https://play.google.com/store/apps/details?id=$packageName');
+                try {
+                  final launched = await launchUrl(marketUri, mode: LaunchMode.externalApplication);
+                  if (!launched) {
+                    await launchUrl(webUri, mode: LaunchMode.externalApplication);
+                  }
+                } catch (_) {
+                  await launchUrl(webUri, mode: LaunchMode.externalApplication);
+                }
+              },
+              child: const Text(
+                'Update Now',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showSortOptions(BuildContext context) {

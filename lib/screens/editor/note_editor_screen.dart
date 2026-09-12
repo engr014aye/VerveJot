@@ -12,7 +12,6 @@ import '../../data/models/note_model.dart';
 import '../../providers/notes_provider.dart';
 import 'widgets/color_tag_picker.dart';
 import 'widgets/folder_picker_dialog.dart';
-import 'widgets/markdown_toolbar.dart';
 
 class NoteEditorScreen extends StatefulWidget {
   final int? noteId;
@@ -551,13 +550,6 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
             ),
           ],
         ),
-        bottomNavigationBar: _isPreviewMode
-            ? null
-            : MarkdownToolbar(
-                controller: _contentController,
-                focusNode: _contentFocus,
-                accentColor: accentColor,
-              ),
       ),
     );
   }
