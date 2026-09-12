@@ -6,6 +6,7 @@ class PreferencesService {
   static const String _keySoundVolume = 'vervejot_sound_volume';
   static const String _keyHapticsEnabled = 'vervejot_haptics_enabled';
   static const String _keyGridView = 'vervejot_grid_view';
+  static const String _keySortOption = 'vervejot_sort_option';
 
   static PreferencesService? _instance;
   final SharedPreferences _prefs;
@@ -34,4 +35,7 @@ class PreferencesService {
 
   bool get isGridView => _prefs.getBool(_keyGridView) ?? true;
   Future<bool> setGridView(bool value) => _prefs.setBool(_keyGridView, value);
+
+  String get sortOption => _prefs.getString(_keySortOption) ?? 'lastEditedDesc';
+  Future<bool> setSortOption(String value) => _prefs.setString(_keySortOption, value);
 }

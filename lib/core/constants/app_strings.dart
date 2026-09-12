@@ -3,9 +3,9 @@ class AppStrings {
 
   static const String appName = 'VerveJot';
   static const String appTagline = 'Daily Notes & Tasks';
-  static const String versionName = '1.0.0';
-  static const String versionCode = '1';
-  static const String version = '1.0.0 (1)';
+  static const String versionName = '1.1.0';
+  static const String versionCode = '2';
+  static const String version = '1.1.0 (2)';
   static const String developerName = 'Zahra ini';
   static const String privacyPolicyUrl = 'https://doc-hosting.flycricket.io/vervejot-privacy-policy/4c4cb463-fff5-4c6d-bbef-cec84bf1c1b1/privacy';
 

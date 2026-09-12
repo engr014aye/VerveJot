@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/bouncing_button.dart';
+import '../../../core/widgets/highlighted_text.dart';
 import '../../../data/models/note_model.dart';
 import '../../../providers/folders_provider.dart';
 import '../../../providers/notes_provider.dart';
@@ -45,6 +46,7 @@ class NoteCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final foldersProvider = context.watch<FoldersProvider>();
+    final notesProvider = context.watch<NotesProvider>();
 
     final folder = note.folderId != null
         ? foldersProvider.folders.cast().firstWhere(
@@ -55,6 +57,19 @@ class NoteCard extends StatelessWidget {
 
     final accentColor = AppColors.fromHex(note.colorHex, defaultColor: AppColors.primary);
     final contentPreview = _cleanContentPreview(note.content);
+
+    final hasCustomColor = note.colorHex != null && note.colorHex!.isNotEmpty;
+    final cardBgColor = hasCustomColor
+        ? (isDark
+            ? Color.alphaBlend(accentColor.withValues(alpha: 0.16), AppColors.oledCard)
+            : Color.alphaBlend(accentColor.withValues(alpha: 0.10), AppColors.lightCard))
+        : (isDark ? AppColors.oledCard : AppColors.lightCard);
+
+    final cardBorderColor = note.isPinned
+        ? accentColor.withValues(alpha: 0.60)
+        : (hasCustomColor
+            ? accentColor.withValues(alpha: isDark ? 0.40 : 0.28)
+            : (isDark ? AppColors.oledCardBorder : AppColors.lightCardBorder));
 
     return BouncingButton(
       shrinkScale: 0.96,
@@ -86,12 +101,10 @@ class NoteCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.oledCard : AppColors.lightCard,
+          color: cardBgColor,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: note.isPinned
-                ? accentColor.withValues(alpha: 0.5)
-                : (isDark ? AppColors.oledCardBorder : AppColors.lightCardBorder),
+            color: cardBorderColor,
             width: note.isPinned ? 1.5 : 1,
           ),
           boxShadow: isDark
@@ -148,9 +161,10 @@ class NoteCard extends StatelessWidget {
 
             const SizedBox(height: 10),
 
-            // Note Title
-            Text(
-              note.title.isEmpty ? 'Untitled Note' : note.title,
+            // Note Title with Search Highlighting
+            HighlightedText(
+              text: note.title.isEmpty ? 'Untitled Note' : note.title,
+              query: notesProvider.searchQuery,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -163,8 +177,9 @@ class NoteCard extends StatelessWidget {
 
             if (contentPreview.isNotEmpty && !isCompact) ...[
               const SizedBox(height: 6),
-              Text(
-                contentPreview,
+              HighlightedText(
+                text: contentPreview,
+                query: notesProvider.searchQuery,
                 maxLines: 4,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -227,6 +242,24 @@ class NoteCard extends StatelessWidget {
                   Navigator.pop(ctx);
                   if (note.id != null) {
                     notesProvider.togglePin(note.id!);
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.copy_rounded, color: AppColors.primary),
+                title: const Text('Duplicate Note'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  if (note.id != null) {
+                    final newId = await notesProvider.duplicateNote(note.id!);
+                    if (newId != null && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Note duplicated successfully!'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    }
                   }
                 },
               ),

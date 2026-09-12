@@ -2,7 +2,7 @@ name: vervejot
 description: "VerveJot – 100% Offline Daily Notes & Tasks organizer with fluid spring physics, tactile bounce interactions, and subtle audio feedback."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: ^3.12.2
@@ -20,6 +20,7 @@ dependencies:
   audioplayers: ^6.8.1
   share_plus: ^13.3.0
   url_launcher: ^6.3.1
+  in_app_update: ^5.0.0
 
 dev_dependencies:
   flutter_test:

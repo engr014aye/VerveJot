@@ -27,14 +27,14 @@ class MarkdownToolbar extends StatelessWidget {
         text: newText,
         selection: TextSelection.collapsed(offset: cursorOffset),
       );
-      focusNode.requestFocus();
+      _restoreFocus();
       return;
     }
 
     final start = selection.start;
     final end = selection.end;
 
-    // Case 1: Text is highlighted / selected
+    // Case 1: Text is selected
     if (start != end) {
       final selectedText = text.substring(start, end);
       final before = text.substring(0, start);
@@ -95,7 +95,7 @@ class MarkdownToolbar extends StatelessWidget {
       );
     }
 
-    focusNode.requestFocus();
+    _restoreFocus();
   }
 
   void _toggleLinePrefix(String targetPrefix) {
@@ -120,7 +120,7 @@ class MarkdownToolbar extends StatelessWidget {
     final currentLine = text.substring(lineStart, lineEnd);
     final postLine = text.substring(lineEnd);
 
-    // Identify existing list prefixes
+    // Regex matching existing prefixes
     final prefixRegex = RegExp(r'^(\- \[[ x]\] |\d+\. |\- |\> |\#\#? )');
     final match = prefixRegex.firstMatch(currentLine);
 
@@ -154,13 +154,20 @@ class MarkdownToolbar extends StatelessWidget {
       selection: TextSelection.collapsed(offset: newCursor),
     );
 
-    focusNode.requestFocus();
+    _restoreFocus();
+  }
+
+  void _restoreFocus() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!focusNode.hasFocus) {
+        focusNode.requestFocus();
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final List<_FormatToolItem> items = [
       _FormatToolItem(
@@ -183,11 +190,26 @@ class MarkdownToolbar extends StatelessWidget {
         label: '1. List',
         onTap: () => _toggleLinePrefix('1. '),
       ),
+      _FormatToolItem(
+        icon: Icons.format_list_bulleted_rounded,
+        label: 'Bullet',
+        onTap: () => _toggleLinePrefix('- '),
+      ),
+      _FormatToolItem(
+        icon: Icons.title_rounded,
+        label: 'Heading',
+        onTap: () => _toggleLinePrefix('## '),
+      ),
+      _FormatToolItem(
+        icon: Icons.format_quote_rounded,
+        label: 'Quote',
+        onTap: () => _toggleLinePrefix('> '),
+      ),
     ];
 
     return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+      height: 50,
+      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
       decoration: BoxDecoration(
         color: isDark ? AppColors.oledSurface : AppColors.lightSurface,
         border: Border(
@@ -198,61 +220,60 @@ class MarkdownToolbar extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.06),
             blurRadius: 10,
-            offset: const Offset(0, -2),
+            offset: const Offset(0, -3),
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: items.map((item) {
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 3.0),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: items.map((item) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
               child: BouncingButton(
                 shrinkScale: 0.90,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
                 onTap: item.onTap,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
+                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
                   decoration: BoxDecoration(
                     color: isDark
-                        ? accentColor.withValues(alpha: 0.16)
+                        ? accentColor.withValues(alpha: 0.15)
                         : accentColor.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: accentColor.withValues(alpha: 0.45),
-                      width: 1.2,
+                      color: accentColor.withValues(alpha: 0.35),
+                      width: 1,
                     ),
                   ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          item.icon,
-                          size: 16,
-                          color: accentColor,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        item.icon,
+                        size: 15,
+                        color: accentColor,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        item.label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : Colors.black87,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          item.label,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-          );
-        }).toList(),
+            );
+          }).toList(),
+        ),
       ),
     );
   }

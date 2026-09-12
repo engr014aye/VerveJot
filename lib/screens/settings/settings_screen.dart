@@ -4,38 +4,19 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
+import '../../core/services/audio_service.dart';
+import '../../core/services/in_app_update_service.dart';
 import '../../core/widgets/bouncing_button.dart';
 import '../../providers/settings_provider.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  void _showComingSoonDialog(BuildContext context, String featureName) {
-    showCupertinoDialog(
-      context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: const Text('Feature Coming Soon'),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 8.0),
-          child: Text('$featureName will be available in the next update.'),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _openPrivacyPolicy(BuildContext context) async {
     final uri = Uri.parse(AppStrings.privacyPolicyUrl);
     try {
       final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!launched) {
-        // Fallback to platform default
         await launchUrl(uri);
       }
     } catch (_) {
@@ -81,6 +62,65 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _checkForUpdates(BuildContext context) async {
+    AudioService().playTap();
+
+    showCupertinoDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const CupertinoAlertDialog(
+        title: Text('Checking for Updates'),
+        content: Padding(
+          padding: EdgeInsets.only(top: 12.0),
+          child: CupertinoActivityIndicator(radius: 12),
+        ),
+      ),
+    );
+
+    final status = await InAppUpdateService().checkUpdateManual();
+    if (!context.mounted) return;
+    Navigator.of(context).pop(); // dismiss loading
+
+    String title;
+    String message;
+
+    switch (status) {
+      case UpdateCheckStatus.updateAvailable:
+        title = 'Update Available';
+        message = 'A new version of VerveJot is available on Google Play. Follow the prompt to install.';
+        break;
+      case UpdateCheckStatus.upToDate:
+        title = 'Up to Date';
+        message = 'VerveJot ${AppStrings.versionName} is currently the latest version available.';
+        break;
+      case UpdateCheckStatus.failed:
+      case UpdateCheckStatus.notSupported:
+        title = 'Google Play Store Check';
+        message = 'Updates are distributed through the Google Play Store once published to Closed Testing or Production tracks.';
+        break;
+    }
+
+    if (context.mounted) {
+      showCupertinoDialog(
+        context: context,
+        builder: (ctx) => CupertinoAlertDialog(
+          title: Text(title),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Text(message),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   void _showFallbackDialog({
     required BuildContext context,
     required String title,
@@ -115,7 +155,10 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(
         leading: BouncingButton(
           shrinkScale: 0.85,
-          onTap: () => Navigator.of(context).pop(),
+          onTap: () {
+            AudioService().playTap();
+            Navigator.of(context).pop();
+          },
           child: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
         ),
         title: const Text(AppStrings.settingsTitle),
@@ -154,7 +197,10 @@ class SettingsScreen extends StatelessWidget {
                           label: 'System',
                           icon: Icons.brightness_auto_rounded,
                           isSelected: settings.themeMode == ThemeMode.system,
-                          onTap: () => settings.setThemeMode(ThemeMode.system),
+                          onTap: () {
+                            AudioService().playTap();
+                            settings.setThemeMode(ThemeMode.system);
+                          },
                           isDark: isDark,
                         ),
                         const SizedBox(width: 8),
@@ -163,7 +209,10 @@ class SettingsScreen extends StatelessWidget {
                           label: 'Light',
                           icon: Icons.light_mode_rounded,
                           isSelected: settings.themeMode == ThemeMode.light,
-                          onTap: () => settings.setThemeMode(ThemeMode.light),
+                          onTap: () {
+                            AudioService().playTap();
+                            settings.setThemeMode(ThemeMode.light);
+                          },
                           isDark: isDark,
                         ),
                         const SizedBox(width: 8),
@@ -172,7 +221,10 @@ class SettingsScreen extends StatelessWidget {
                           label: 'Dark',
                           icon: Icons.dark_mode_rounded,
                           isSelected: settings.themeMode == ThemeMode.dark,
-                          onTap: () => settings.setThemeMode(ThemeMode.dark),
+                          onTap: () {
+                            AudioService().playTap();
+                            settings.setThemeMode(ThemeMode.dark);
+                          },
                           isDark: isDark,
                         ),
                       ],
@@ -183,7 +235,10 @@ class SettingsScreen extends StatelessWidget {
               const Divider(),
               SwitchListTile(
                 value: settings.isGridView,
-                onChanged: (_) => settings.toggleViewMode(),
+                onChanged: (_) {
+                  AudioService().playTap();
+                  settings.toggleViewMode();
+                },
                 title: const Text(
                   'Grid Dashboard Layout',
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
@@ -202,20 +257,23 @@ class SettingsScreen extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // Section: Audio & Haptics (Disabled for now with iOS coming-soon prompt)
+          // Section: Audio & Haptics (Re-activated with Volume Control)
           _buildSectionHeader(AppStrings.audioHapticsSection, isDark),
           _buildCardWrapper(
             isDark: isDark,
             children: [
               SwitchListTile(
-                value: false,
-                onChanged: (_) => _showComingSoonDialog(context, 'Sound Effects'),
+                value: settings.soundEnabled,
+                onChanged: (val) {
+                  settings.setSoundEnabled(val);
+                  if (val) AudioService().playTap();
+                },
                 title: const Text(
                   AppStrings.soundEffects,
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                 ),
                 subtitle: Text(
-                  'Crisp tactile paper rustle, tap clicks, and completion chimes',
+                  'Crisp tactile paper rustles, tap clicks, and save chimes',
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? AppColors.oledTextMuted : AppColors.lightTextMuted,
@@ -223,16 +281,64 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 activeThumbColor: AppColors.primary,
               ),
+              if (settings.soundEnabled) ...[
+                const Divider(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      Icon(
+                        settings.soundVolume > 0.5
+                            ? Icons.volume_up_rounded
+                            : (settings.soundVolume > 0
+                                ? Icons.volume_down_rounded
+                                : Icons.volume_mute_rounded),
+                        size: 20,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Slider(
+                          value: settings.soundVolume,
+                          min: 0.0,
+                          max: 1.0,
+                          divisions: 10,
+                          activeColor: AppColors.primary,
+                          inactiveColor: isDark ? Colors.white12 : Colors.black12,
+                          onChanged: (vol) {
+                            settings.setSoundVolume(vol);
+                          },
+                          onChangeEnd: (vol) {
+                            AudioService().playTap();
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${(settings.soundVolume * 100).round()}%',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppColors.oledTextMuted : AppColors.lightTextMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const Divider(),
               SwitchListTile(
-                value: false,
-                onChanged: (_) => _showComingSoonDialog(context, 'Haptic Feedback'),
+                value: settings.hapticsEnabled,
+                onChanged: (val) {
+                  settings.setHapticsEnabled(val);
+                  if (val) AudioService().playTap(haptic: true);
+                },
                 title: const Text(
                   AppStrings.hapticFeedback,
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                 ),
                 subtitle: Text(
-                  'Vibration feedback on tap and spring interactions',
+                  'Subtle tactile vibration on taps, buttons, and drag interactions',
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? AppColors.oledTextMuted : AppColors.lightTextMuted,
@@ -250,7 +356,7 @@ class SettingsScreen extends StatelessWidget {
           _buildCardWrapper(
             isDark: isDark,
             children: [
-              // Version item (directly linked with versionName and versionCode)
+              // Version item
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(8),
@@ -268,6 +374,32 @@ class SettingsScreen extends StatelessWidget {
                   '${AppStrings.versionName} (${AppStrings.versionCode})',
                   style: TextStyle(fontSize: 13),
                 ),
+              ),
+              const Divider(),
+
+              // Check for Updates item
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.system_update_rounded, color: Color(0xFF38BDF8), size: 20),
+                ),
+                title: const Text(
+                  'Check for Updates',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                ),
+                subtitle: Text(
+                  'Check Google Play Store for new version releases',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? AppColors.oledTextMuted : AppColors.lightTextMuted,
+                  ),
+                ),
+                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                onTap: () => _checkForUpdates(context),
               ),
               const Divider(),
 

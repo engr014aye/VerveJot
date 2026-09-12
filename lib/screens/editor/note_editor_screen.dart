@@ -12,6 +12,7 @@ import '../../data/models/note_model.dart';
 import '../../providers/notes_provider.dart';
 import 'widgets/color_tag_picker.dart';
 import 'widgets/folder_picker_dialog.dart';
+import 'widgets/markdown_toolbar.dart';
 
 class NoteEditorScreen extends StatefulWidget {
   final int? noteId;
@@ -47,6 +48,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
 
   int _wordCount = 0;
   int _charCount = 0;
+  int _readingTimeMin = 0;
 
   @override
   void initState() {
@@ -77,9 +79,11 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     final text = _contentController.text.trim();
     final words = text.isEmpty ? 0 : text.split(RegExp(r'\s+')).length;
     final chars = _contentController.text.length;
+    final readingTime = words == 0 ? 0 : (words / 200).ceil();
     setState(() {
       _wordCount = words;
       _charCount = chars;
+      _readingTimeMin = readingTime;
     });
   }
 
@@ -525,7 +529,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
                       ),
                     ),
                     child: Text(
-                      '$_wordCount words • $_charCount chars',
+                      '$_wordCount words • $_charCount chars • $_readingTimeMin min read',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -547,6 +551,13 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
             ),
           ],
         ),
+        bottomNavigationBar: _isPreviewMode
+            ? null
+            : MarkdownToolbar(
+                controller: _contentController,
+                focusNode: _contentFocus,
+                accentColor: accentColor,
+              ),
       ),
     );
   }

@@ -70,6 +70,85 @@ class _DashboardScreenState extends State<DashboardScreen>
     AudioService().playTap();
   }
 
+  void _showSortOptions(BuildContext context) {
+    AudioService().playTap();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final notesProvider = context.read<NotesProvider>();
+    final currentSort = notesProvider.sortOption;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppColors.oledSurface : AppColors.lightSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  'Sort Notes',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ),
+              const Divider(),
+              ...NoteSortOption.values.map((option) {
+                final isSelected = option == currentSort;
+                return ListTile(
+                  leading: Icon(
+                    _getSortIcon(option),
+                    color: isSelected
+                        ? AppColors.primary
+                        : (isDark ? AppColors.oledTextSecondary : AppColors.lightTextSecondary),
+                  ),
+                  title: Text(
+                    option.label,
+                    style: TextStyle(
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected ? AppColors.primary : null,
+                    ),
+                  ),
+                  trailing: isSelected
+                      ? const Icon(Icons.check_rounded, color: AppColors.primary, size: 20)
+                      : null,
+                  onTap: () {
+                    AudioService().playTap();
+                    notesProvider.setSortOption(option);
+                    Navigator.pop(ctx);
+                  },
+                );
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getSortIcon(NoteSortOption option) {
+    switch (option) {
+      case NoteSortOption.lastEditedDesc:
+        return Icons.access_time_rounded;
+      case NoteSortOption.dateCreatedDesc:
+        return Icons.calendar_today_rounded;
+      case NoteSortOption.dateCreatedAsc:
+        return Icons.history_rounded;
+      case NoteSortOption.titleAsc:
+        return Icons.sort_by_alpha_rounded;
+      case NoteSortOption.titleDesc:
+        return Icons.sort_by_alpha_rounded;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -172,12 +251,12 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
 
             // View Mode Switcher (Grid / List for Notes & Pinned)
-            if (_currentTabIndex == 0 || _currentTabIndex == 1)
+            if (_currentTabIndex == 0 || _currentTabIndex == 1) ...[
               BouncingButton(
                 shrinkScale: 0.85,
                 onTap: () => settingsProvider.toggleViewMode(),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 6.0),
                   child: Icon(
                     settingsProvider.isGridView
                         ? Icons.view_list_rounded
@@ -187,6 +266,19 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ),
                 ),
               ),
+              BouncingButton(
+                shrinkScale: 0.85,
+                onTap: () => _showSortOptions(context),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                  child: Icon(
+                    Icons.sort_rounded,
+                    size: 22,
+                    color: isDark ? AppColors.oledTextSecondary : AppColors.lightTextSecondary,
+                  ),
+                ),
+              ),
+            ],
 
             // Settings Action
             BouncingButton(
